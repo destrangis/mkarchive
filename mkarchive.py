@@ -30,11 +30,11 @@ def create_tar(filelst, tarname=DEFAULT_TAR_NAME):
         for f in filelst:
             tar.add(f)
 
-def create_tar1(filelst, tarname=DEFAULT_TAR_NAME):
-    print(f"Creating tar '{tarname}'")
-    p = subprocess.run(["tar", "-cvf", str(tarname), ] + filelst)
-    if p.returncode:
-        raise RuntimeError(f"Couldn't build archive '{tarname}'")
+# def create_tar1(filelst, tarname=DEFAULT_TAR_NAME):
+    # print(f"Creating tar '{tarname}'")
+    # p = subprocess.run(["tar", "-cvf", str(tarname), ] + filelst)
+    # if p.returncode:
+        # raise RuntimeError(f"Couldn't build archive '{tarname}'")
 
 
 def edit_file_size(name, newsize):
@@ -68,7 +68,7 @@ def make_executable(src, exename, libtar=None):
 
 
 def create_self_extractor(libtar):
-    print(f"\tCreating {SELF_EXTRACTOR}")
+    print(f"Creating {SELF_EXTRACTOR}")
     selfext = SELF_EXTRACTOR
     src = SELF_EXTRACTOR_SRC
 
@@ -77,17 +77,17 @@ def create_self_extractor(libtar):
     make_executable(src, selfext, libtar)
 
     size = selfext.stat().st_size
-    print(f"\t{selfext} created with size {size}")
+    print(f"{selfext} created with size {size}")
 
     edit_file_size(src, size)
 
-    print(f"\tRecompiling {src}")
+    print(f"Recompiling {src}")
     make_executable(src, selfext, libtar)
 
     if size != selfext.stat().st_size: # sanity check
         raise RuntimeError("Size mismatch on output executable!")
 
-    print(f"\tSize of {selfext} matches {size}")
+    print(f"Size of {selfext} matches {size}")
     return selfext
 
 
@@ -110,7 +110,7 @@ def cat_exe_archive(name, archive, output):
 
 def parse_cmdline(argv):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--output", "-o", metavar="name", default="selfextract.py",
+    p.add_argument("--output", "-o", metavar="name", default="selfextract",
                     help="Name of the output self-extractor")
     # p.add_argument("--run", "-r", metavar="program",
                     # help="Executable program or script to run after extraction")
