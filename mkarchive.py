@@ -8,11 +8,13 @@ import subprocess
 import sys
 import tarfile
 
+
+HERE = pathlib.Path(__file__).parent
 DEFAULT_LIBTAR_A = "/usr/lib/x86_64-linux-gnu/libtar.a"
 DEFAULT_TAR_NAME = "_tmp.tar"
-SELF_EXTRACTOR_PATTERN = pathlib.Path("selfextract0.c")
-SELF_EXTRACTOR_SRC = pathlib.Path("selfextract.c")
-SELF_EXTRACTOR = pathlib.Path("selfextract")
+SELF_EXTRACTOR_PATTERN = HERE / "selfextract0.c"
+SELF_EXTRACTOR_SRC = HERE / "selfextract.c"
+SELF_EXTRACTOR = HERE / "selfextract"
 CHUNKSIZE = 1024 * 1024
 SIZE_PATTERN = """
     ^\#define
@@ -55,7 +57,8 @@ def make_executable(src, exename, libtar=None):
         libtar = "-ltar"  # dynamic link!
 
     if sys.platform.lower().startswith("linux"):
-        p = subprocess.run(["gcc", "-O3", "-o", str(exename), str(src), libtar])
+        # p = subprocess.run(["gcc", "-O3", "-o", str(exename), str(src), libtar])
+        p = subprocess.run(["gcc", "-g", "-o", str(exename), str(src), libtar])
         # p = subprocess.run(["gcc", "-static", "-O3", "-o", str(exename), str(src), "-ltar" ])
         # p = subprocess.run(["gcc", "-g", "-o", str(exename), str(src), "/home/javier/tartest/lib/libtar.a"])
         if p.returncode:
