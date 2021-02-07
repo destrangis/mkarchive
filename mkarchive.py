@@ -57,8 +57,8 @@ def make_executable(src, exename, libtar=None):
         libtar = "-ltar"  # dynamic link!
 
     if sys.platform.lower().startswith("linux"):
-        # p = subprocess.run(["gcc", "-O3", "-o", str(exename), str(src), libtar])
-        p = subprocess.run(["gcc", "-g", "-o", str(exename), str(src), libtar])
+        p = subprocess.run(["gcc", "-O3", "-o", str(exename), str(src), libtar])
+        # p = subprocess.run(["gcc", "-g", "-o", str(exename), str(src), libtar])
         # p = subprocess.run(["gcc", "-static", "-O3", "-o", str(exename), str(src), "-ltar" ])
         # p = subprocess.run(["gcc", "-g", "-o", str(exename), str(src), "/home/javier/tartest/lib/libtar.a"])
         if p.returncode:
@@ -112,9 +112,9 @@ def parse_cmdline(argv):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--output", "-o", metavar="name", default="selfextract.py",
                     help="Name of the output self-extractor")
-    p.add_argument("--run", "-r", metavar="program",
-                    help="Executable program or script to run after extraction")
-    p.add_argument("--libtar", "-l", metavar="libtar-location", default= DEFAULT_LIBTAR_A,
+    # p.add_argument("--run", "-r", metavar="program",
+                    # help="Executable program or script to run after extraction")
+    p.add_argument("--libtar", "-l", metavar="libtar-location", default=DEFAULT_LIBTAR_A,
                     help=f"Location of libtar.a for linking. Default '{DEFAULT_LIBTAR_A}'")
     p.add_argument("file", nargs="+",
                     help="Files and directories to archive")
