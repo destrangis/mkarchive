@@ -61,13 +61,13 @@ def edit_file_size(name, newsize):
 
 def make_executable(src, exename, libtar=None):
     if libtar is None:
-        libtar = "-ltar"  # dynamic link!
+        # We prefer static linking using the .a version of libtar, as
+        # it may not be installed on the target system
+        libtar = DEFAULT_LIBTAR_A
+        # libtar = "-ltar"  # this would create a dynamic link
 
     if sys.platform.lower().startswith("linux"):
         p = subprocess.run(["gcc", "-O3", "-o", str(exename), str(src), libtar])
-        # p = subprocess.run(["gcc", "-g", "-o", str(exename), str(src), libtar])
-        # p = subprocess.run(["gcc", "-static", "-O3", "-o", str(exename), str(src), "-ltar" ])
-        # p = subprocess.run(["gcc", "-g", "-o", str(exename), str(src), "/home/javier/tartest/lib/libtar.a"])
         if p.returncode:
             raise RuntimeError(
                 f"Couldn't build self extractor '{exename}' from '{src}'"
