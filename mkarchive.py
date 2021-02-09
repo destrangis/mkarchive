@@ -12,7 +12,7 @@ import tarfile
 
 HERE = pathlib.Path(__file__).parent
 DEFAULT_LIBTAR_A = "/usr/lib/x86_64-linux-gnu/libtar.a"
-DEFAULT_TAR_NAME = "_tmp.tar"
+DEFAULT_TAR_NAME = "_tmp.tar.gz"
 DEFAULT_SELF_EXTRACTOR_NAME = "selfextract"
 SELF_EXTRACTOR_PATTERN = HERE / "selfextract0.c"
 SELF_EXTRACTOR_SRC = HERE / "selfextract1.c"
@@ -29,7 +29,7 @@ SIZE_PATTERN = """
 
 def create_tar(filelst, tarname=DEFAULT_TAR_NAME):
     print(f"Creating tar '{tarname}'")
-    with tarfile.open(tarname, "w", format=tarfile.GNU_FORMAT) as tar:
+    with tarfile.open(tarname, "w:gz", format=tarfile.GNU_FORMAT) as tar:
         for f in filelst:
             tar.add(f)
 
@@ -67,7 +67,8 @@ def make_executable(src, exename, libtar=None):
         # libtar = "-ltar"  # this would create a dynamic link
 
     if sys.platform.lower().startswith("linux"):
-        p = subprocess.run(["gcc", "-O3", "-o", str(exename), str(src), libtar])
+        p = subprocess.run(["gcc", "-O3", "-o", str(exename), str(src),
+                                                        libtar, "-lz"])
         if p.returncode:
             raise RuntimeError(
                 f"Couldn't build self extractor '{exename}' from '{src}'"

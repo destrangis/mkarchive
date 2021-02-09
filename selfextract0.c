@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <getopt.h>
+
+#include "zlib.h"
 #include "libtar.h"
 
 #define THIS_FILE_SIZE   0
@@ -162,6 +164,98 @@ static void say(const char *pattern, ...)
     }
 }
 
+static gzFile inputstream;
+static const unsigned int GZIP_BUFFER_SIZE = (128*1024);
+static int eof_found = 0;
+
+int open_compressed(const char *filename, int mode, ...)
+{
+    int fd;
+
+    say("Opening '%s'\n", filename);
+    if (mode != O_RDONLY) {
+        fprintf(stderr, "Error '%s' can only be opened in O_RDONLY(%d) "
+                        "mode, not (%d)\n", filename, O_RDONLY, mode);
+        return -1;
+    }
+
+    if ((fd = open(filename, O_RDONLY)) < 0) {
+        fprintf(stderr, "Couldn't open '%s': [%d] %s\n", filename,
+                                            errno, strerror(errno));
+        return -1;
+    }
+
+    say("Setting position at %d\n", THIS_FILE_SIZE);
+    if (lseek(fd, THIS_FILE_SIZE, SEEK_SET) < 0) {
+        fprintf(stderr, "Error seeking [%d] %s\n", errno, strerror(errno));
+        return -1;
+    }
+
+    inputstream = gzdopen(fd, "rb");
+    if (NULL == inputstream) {
+        fprintf(stderr, "Error setting up decompression\n");
+        return -1;
+    }
+
+    if (gzbuffer(inputstream, GZIP_BUFFER_SIZE) < 0) {
+        fprintf(stderr, "Couldn't allocate buffer size\n");
+    }
+
+    return fd;
+}
+
+ssize_t read_compressed(int fd, void *buffer, size_t len)
+{
+    int bytesread;
+    int rc;
+
+    if (eof_found)
+        return 0;
+
+    //say("Reading block of %zu bytes.\n", len);
+
+    bytesread = gzread(inputstream, buffer, len);
+
+    if (bytesread == -1) {
+        gzerror(inputstream, &rc);
+        fprintf(stderr, "Read error %d. ", rc);
+        if (rc == Z_ERRNO) {
+            // non-zlib error
+            fprintf(stderr, "[%d] %s", errno, strerror(errno));
+        }
+        fprintf(stderr, "\n");
+        return -1;
+    }
+
+    if (bytesread < len) {
+        eof_found = 1;
+    }
+
+    return bytesread;
+}
+
+int close_compressed(int fd)
+{
+    int rc;
+
+    rc = gzclose_r(inputstream);
+    if (rc != Z_OK) {
+        fprintf(stderr, "Error [%d] closing stream.", rc);
+        if (rc == Z_ERRNO) {
+            fprintf(stderr, " [%d] %s", errno, strerror(errno));
+        }
+        fprintf(stderr, "\n");
+    }
+    return rc == Z_OK? 0: -1;
+}
+
+
+static tartype_t gzfunpack = {
+    open_compressed,
+    close_compressed,
+    read_compressed,
+    NULL
+};
 
 static char * make_temp_dir()
 {
@@ -189,15 +283,15 @@ static char * make_temp_dir()
 }
 
 
-static int untar(int fd, char *tmpdir)
+static int untar(char *filename, char *tmpdir)
 {
     TAR *t;
     int rc;
     unsigned int verbose = options.verbose? TAR_VERBOSE: 0;
 
-    say("Opening archive fileno: %d\n", fd);
+    say("Opening archive '%s'\n", filename);
 
-    rc = tar_fdopen(&t, fd, "embedded.tar", NULL, O_RDONLY, 0, verbose | TAR_GNU);
+    rc = tar_open(&t, filename, &gzfunpack, O_RDONLY, 0, verbose | TAR_GNU);
     if (rc < 0) {
         fprintf(stderr, "Cannot read tar file [%d] %s\n", errno, strerror(errno));
         return rc;
@@ -215,12 +309,12 @@ static int untar(int fd, char *tmpdir)
     return 0;
 }
 
-static int list(int fd)
+static int list(char *filename)
 {
     TAR *t;
     int rc;
 
-    rc = tar_fdopen(&t, fd, "embedded.tar", NULL, O_RDONLY, 0, TAR_GNU);
+    rc = tar_open(&t, filename, &gzfunpack, O_RDONLY, 0, TAR_GNU);
     if (rc < 0) {
         fprintf(stderr, "Cannot read tar file [%d] %s\n", errno, strerror(errno));
         return rc;
@@ -235,7 +329,6 @@ static int list(int fd)
     tar_close(t);
     return 0;
 }
-
 
 
 static int run_setup(char *tmpdir)
@@ -280,26 +373,26 @@ int main(int argc, char *argv[])
         goto exit;
     }
 
-    if ((fd = open(argv[0], O_RDONLY)) < 0) {
-        fprintf(stderr, "Couldn't open '%s': [%d] %s\n", argv[0], errno, strerror(errno));
-        rc = 101;
-        goto exit;
-    }
+    //if ((fd = open(argv[0], O_RDONLY)) < 0) {
+        //fprintf(stderr, "Couldn't open '%s': [%d] %s\n", argv[0], errno, strerror(errno));
+        //rc = 101;
+        //goto exit;
+    //}
 
-    say("Setting position at %d\n", THIS_FILE_SIZE);
-    if (lseek(fd, THIS_FILE_SIZE, SEEK_SET) < 0) {
-        fprintf(stderr, "Error seeking [%d] %s\n", errno, strerror(errno));
-        rc = 102;
-        goto exit;
-    }
+    //say("Setting position at %d\n", THIS_FILE_SIZE);
+    //if (lseek(fd, THIS_FILE_SIZE, SEEK_SET) < 0) {
+        //fprintf(stderr, "Error seeking [%d] %s\n", errno, strerror(errno));
+        //rc = 102;
+        //goto exit;
+    //}
 
     if (options.list) {
-        if (list(fd) != 0) {
+        if (list(argv[0]) != 0) {
             rc = 105;
             goto exit;
         }
     } else {
-        if (untar(fd, tmpdir) < 0) {
+        if (untar(argv[0], tmpdir) < 0) {
             rc = 103;
             goto exit;
         }
