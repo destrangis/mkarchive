@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -348,9 +349,55 @@ static int run_setup(char *tmpdir)
     return rc;
 }
 
+
+static int remove_tree(char *path)
+{
+    DIR *dir;
+    struct dirent *entry;
+    char *entryname;
+    int rc;
+
+    say("removing DIR '%s'\n", path);
+    if (NULL == (dir = opendir(path))) {
+        fprintf(stderr, "Cannot open '%s' [%d] %s\n",
+                            path, errno, strerror(errno));
+        return -1;
+    }
+
+    for (entry = readdir(dir);
+            entry;
+            entry = readdir(dir)) {
+        entryname = fstring("%s/%s", path, entry->d_name);
+        if (entry->d_type == DT_DIR) {
+            if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
+                continue;
+            }
+            rc = remove_tree(entryname);
+            if (rc != 0)
+                return rc;
+        } else {
+            say("removing FILE '%s'\n", entryname);
+            rc = unlink(entryname);
+            if (rc != 0) {
+                fprintf(stderr, "Cannot remove '%s' [%d] %s\n",
+                            entryname, errno, strerror(errno));
+                return rc;
+            }
+        }
+        free(entryname);
+    }
+    if (-1 == (rc = rmdir(path))) {
+        fprintf(stderr, "Cannot remove directory '%s' [%d] %s\n",
+                            path, errno, strerror(errno));
+        return -1;
+    }
+    return 0;
+}
+
 static void cleanup(char *tmpdir)
 {
     say("Cleaning up %s\n", tmpdir);
+    remove_tree(tmpdir);
 }
 
 int main(int argc, char *argv[])
