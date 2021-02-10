@@ -11,20 +11,14 @@ import tarfile
 
 
 HERE = pathlib.Path(__file__).parent
-DEFAULT_LIBTAR_A = "/usr/lib/x86_64-linux-gnu/libtar.a"
-DEFAULT_TAR_NAME = "_tmp.tar.gz"
+
+DEFAULT_LIBTAR_A            = "/usr/lib/x86_64-linux-gnu/libtar.a"
+DEFAULT_LIBZ_A              = "/usr/lib/x86_64-linux-gnu/libz.a"
+DEFAULT_TAR_NAME            = "_tmp.tar.gz"
 DEFAULT_SELF_EXTRACTOR_NAME = "selfextract"
-SELF_EXTRACTOR_PATTERN = HERE / "selfextract0.c"
-SELF_EXTRACTOR_SRC = HERE / "selfextract1.c"
-SELF_EXTRACTOR = HERE / "selfextract1"
-CHUNKSIZE = 1024 * 1024
-SIZE_PATTERN = """
-    ^\#define
-    \s+
-    THIS_FILE_SIZE
-    \s+
-    \d+
-"""
+SELF_EXTRACTOR_SRC          = HERE / "selfextract0.c"
+SELF_EXTRACTOR              = HERE / "selfextract1"
+CHUNKSIZE                   = 1024 * 1024
 
 
 def create_tar(filelst, tarname=DEFAULT_TAR_NAME):
@@ -34,41 +28,36 @@ def create_tar(filelst, tarname=DEFAULT_TAR_NAME):
             tar.add(f)
 
 
-# def create_tar1(filelst, tarname=DEFAULT_TAR_NAME):
-# print(f"Creating tar '{tarname}'")
-# p = subprocess.run(["tar", "-cvf", str(tarname), ] + filelst)
-# if p.returncode:
-# raise RuntimeError(f"Couldn't build archive '{tarname}'")
+def make_executable(src, exename,
+                    libtar=None,
+                    zlib=None,
+                    cppdefs=None,
+                    debug=False):
+    if debug:
+        opt = "-g"
+    else:
+        opt = "-O3"
 
-
-def edit_file_size(name, newsize):
-    print(f"Editing size to {newsize}")
-    with name.open() as fd:
-        content = fd.read()
-    newcontent = re.sub(
-        SIZE_PATTERN,
-        f"#define THIS_FILE_SIZE  {newsize}",
-        content,
-        count=1,
-        flags=re.MULTILINE | re.VERBOSE,
-    )
-    if newcontent == content:
-        raise RuntimeError("Substitution pattern not matched!")
-
-    with name.open("w") as fd:
-        fd.write(newcontent)
-
-
-def make_executable(src, exename, libtar=None):
+    # We prefer static linking using the .a version of libtar & libz, as
+    # they may not be installed on the target system
     if libtar is None:
-        # We prefer static linking using the .a version of libtar, as
-        # it may not be installed on the target system
         libtar = DEFAULT_LIBTAR_A
         # libtar = "-ltar"  # this would create a dynamic link
+    if zlib is None:
+        zlib = DEFAULT_LIBZ_A
+        # zlib = "-lz"  # this would create a dynamic link
+
+    cpplst = []
+    if cppdefs is not None:
+        for k, v in cppdefs.items():
+            if v is None:
+                cpplst.append(f"-D{k}")
+            else:
+                cpplst.append(f"-D{k}={v}")
 
     if sys.platform.lower().startswith("linux"):
-        p = subprocess.run(["gcc", "-O3", "-o", str(exename), str(src),
-                                                        libtar, "-lz"])
+        p = subprocess.run(["gcc", opt, "-o", str(exename),]
+                            + cpplst + [str(src), libtar, zlib])
         if p.returncode:
             raise RuntimeError(
                 f"Couldn't build self extractor '{exename}' from '{src}'"
@@ -77,22 +66,22 @@ def make_executable(src, exename, libtar=None):
         raise NotImplementedError(f"Platform '{sys.platform}' not (yet) supported.")
 
 
-def create_self_extractor(libtar):
+def create_self_extractor(libtar, libz):
     print(f"Creating {SELF_EXTRACTOR}")
     selfext = SELF_EXTRACTOR
     src = SELF_EXTRACTOR_SRC
 
-    shutil.copy(SELF_EXTRACTOR_PATTERN, src)
+    #shutil.copy(SELF_EXTRACTOR_PATTERN, src)
 
-    make_executable(src, selfext, libtar)
+    make_executable(src, selfext, libtar, libz)
 
     size = selfext.stat().st_size
     print(f"{selfext} created with size {size}")
 
-    edit_file_size(src, size)
+    #edit_file_size(src, size)
 
     print(f"Recompiling {src}")
-    make_executable(src, selfext, libtar)
+    make_executable(src, selfext, libtar, cppdefs={"THIS_FILE_SIZE": str(size)})
 
     if size != selfext.stat().st_size:  # sanity check
         raise RuntimeError("Size mismatch on output executable!")
@@ -144,6 +133,13 @@ def parse_cmdline(argv):
         default=DEFAULT_LIBTAR_A,
         help=f"Location of libtar.a for linking. Default '{DEFAULT_LIBTAR_A}'",
     )
+    p.add_argument(
+        "--zlib",
+        "-z",
+        metavar="zlib-location",
+        default=DEFAULT_LIBZ_A,
+        help=f"Location of zlib.a for linking. Default '{DEFAULT_LIBZ_A}'",
+    )
     p.add_argument("file", nargs="+", help="Files and directories to archive")
     return p.parse_args(argv)
 
@@ -156,9 +152,9 @@ def main(argv=None):
 
     tarname = pathlib.Path(DEFAULT_TAR_NAME)
     create_tar(options.file, tarname)
-    tempextractor = create_self_extractor(options.libtar)
+    tempextractor = create_self_extractor(options.libtar, options.zlib)
     cat_exe_archive(tempextractor, tarname, pathlib.Path(options.output))
-    cleanup(tempextractor, SELF_EXTRACTOR_SRC, tarname)
+    cleanup(tempextractor, tarname)
 
 
 if __name__ == "__main__":

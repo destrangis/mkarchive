@@ -13,7 +13,9 @@
 #include "zlib.h"
 #include "libtar.h"
 
+#ifndef THIS_FILE_SIZE
 #define THIS_FILE_SIZE   0
+#endif
 
 const char *prog_description = "Self executable archive and installer";
 
