@@ -1,0 +1,120 @@
+install:
+    - title: Welcome to the Installer for FULANOSOFTWARE v3.4
+      type: msgbox
+      text: |
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua. Mattis
+        enim ut tellus elementum sagittis vitae et leo. Gravida dictum fusce
+        ut placerat orci nulla pellentesque dignissim enim. Sodales ut eu
+        sem integer vitae justo eget.
+
+        Et netus et malesuada fames ac turpis egestas maecenas pharetra.
+        Nec ullamcorper sit amet risus nullam eget felis eget. Integer enim
+        neque volutpat ac tincidunt vitae semper quis. Tincidunt nunc
+        pulvinar sapien et ligula ullamcorper.
+
+        Et tortor at risus viverra. Eget mi proin sed libero enim sed.
+        Egestas diam in arcu cursus.
+      #options:
+        #- ok-button=Continue
+
+    - title: Enter Adams Location
+      type: inputbox
+      text: |
+        I need to know the location of the destination directory.
+
+        Please enter the full path where you want this software installed.
+        (e.g. /opt/fulano/3.4)
+      default: /home/javier/test_tree2
+      store: destdir
+
+    - title: Enter License File
+      type: inputbox
+      text: |
+        If you have been issued a license file, please enter its full path.
+
+        (e.g. /home/user/license.dat)
+      store: licensefile
+
+    - title: Warning
+      condition: -z "$licensefile"
+      type: msgbox
+      text: |
+        You haven't entered a license file.
+
+        The installation will proceed, but you'll need to get the license
+        later on to use the software and set the variable LICENSE_FILE
+        to its location.
+
+        Press OK to continue.
+
+    - title: Installing
+      type: infobox
+      text: |
+        Copying files. Please wait...
+
+    - type: code
+      text: sleep 5
+
+    - title: Installing
+      type: infobox
+      text: |
+        Still Installing. Not long now.
+
+        Thank you for your patience.
+
+    - type: code
+      text: |
+        logfile=~/install.log
+        echo "== Copying $rootdir/XXX to $destdir ==" >> $logfile
+        if [ ! -z "$licensefile" ]; then
+            echo "== Copying $licensefile to $destdir ==" >> $logfile
+        fi
+        success=1
+        sleep 3
+
+    - title: Installation Successful
+      type: msgbox
+      condition: $success -eq 1
+      text: |
+        The installation has been successful. You can start to use the
+        software after a session restart (log-out, log-in)
+      options:
+        - clear
+
+    - title: Installation Failed
+      condition: $success -eq 0
+      type: msgbox
+      text: |
+        The install process has failed. You can find more information on
+        the file $logfile
+      options: [clear]
+
+uninstall:
+    - title: Uninstalling FULANOSOFTWARE v3.4
+      type: msgbox
+      text: |
+        This will uninstall FULANOSOFTWARE v3.4
+
+        Press Continue to proceed with the uninstallation, or press
+        Cancel or the ESC key to abort.
+
+    - title: Uninstalling
+      type: infobox
+      text: |
+        Performing the uninstallation.
+
+        This will take a few seconds...
+
+    - type: code
+      text: |
+        echo "Removing this and that"
+        sleep 4
+
+    - title: Finish
+      type: msgbox
+      options: [ clear ]
+      text: |
+        FULANOSOFTWARE v3.4 has successfully been uninstalled.
+
+        Vaya usted con Dios.
