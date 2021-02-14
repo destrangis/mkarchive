@@ -70,6 +70,7 @@ install:
         if [ ! -z "$licensefile" ]; then
             echo "== Copying $licensefile to $destdir ==" >> $logfile
         fi
+        ls -lR $rootdir >> $logfile
         success=1
         sleep 3
 
@@ -77,8 +78,8 @@ install:
       type: msgbox
       condition: $success -eq 1
       text: |
-        The installation of $program $version has been successful. You
-        can start to use the software after a session restart (log-out, log-in)
+        The installation of $program $version has been successful.
+        You can start to use the software after a session restart (log-out, log-in)
       options:
         - clear
 

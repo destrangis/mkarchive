@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 
+from smartsetup import create_installer
 
 HERE = pathlib.Path(__file__).parent
 
@@ -140,6 +141,19 @@ def parse_cmdline(argv):
         default=DEFAULT_LIBZ_A,
         help=f"Location of zlib.a for linking. Default '{DEFAULT_LIBZ_A}'",
     )
+    p.add_argument("--install-spec", "-i", metavar="install-spec",
+        help="Installer specification in YAML")
+    # p.add_argument("--name", "-n", metavar="script-name", default="setup",
+            # help="Generate script with this name. Default 'setup'")
+    p.add_argument("--uname", "-u", metavar="script-name",
+            default="uninstall",
+            help="Name of the uninstaller script. Default 'uninstall'")
+    p.add_argument("--dialog-tool", "-d", metavar="dialog-tool",
+            default='dialog',
+            help="Name of the dialog tool. Default 'dialog'")
+    p.add_argument("--var", "-v", metavar="varname[=value]",
+            action="append",
+            help="Define variable and its value for use in the installer script")
     p.add_argument("file", nargs="+", help="Files and directories to archive")
     return p.parse_args(argv)
 
@@ -149,6 +163,23 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     options = parse_cmdline(argv)
+    if options.install_spec:
+        varlst = options.var or []
+        varmap = {}
+        for v in varlst:
+            kv = v.split("=", 1)
+            key = kv[0]
+            val = kv[1] if len(kv) > 1 else None
+            varmap[key] = val
+
+        create_installer(options.install_spec,
+                    'setup',
+                    options.uname,
+                    dialog=options.dialog_tool,
+                    vars=varmap)
+
+        if 'setup' not in options.file:
+            options.file.append('setup')
 
     tarname = pathlib.Path(DEFAULT_TAR_NAME)
     create_tar(options.file, tarname)
