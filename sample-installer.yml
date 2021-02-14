@@ -1,5 +1,5 @@
 install:
-    - title: Welcome to the Installer for FULANOSOFTWARE v3.4
+    - title: Welcome to the Installer for $program $version
       type: msgbox
       text: |
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
@@ -18,7 +18,7 @@ install:
       #options:
         #- ok-button=Continue
 
-    - title: Enter Adams Location
+    - title: Destination Directory
       type: inputbox
       text: |
         I need to know the location of the destination directory.
@@ -77,8 +77,8 @@ install:
       type: msgbox
       condition: $success -eq 1
       text: |
-        The installation has been successful. You can start to use the
-        software after a session restart (log-out, log-in)
+        The installation of $program $version has been successful. You
+        can start to use the software after a session restart (log-out, log-in)
       options:
         - clear
 
@@ -91,10 +91,10 @@ install:
       options: [clear]
 
 uninstall:
-    - title: Uninstalling FULANOSOFTWARE v3.4
+    - title: Uninstalling $program $version
       type: msgbox
       text: |
-        This will uninstall FULANOSOFTWARE v3.4
+        This will uninstall $program $version
 
         Press Continue to proceed with the uninstallation, or press
         Cancel or the ESC key to abort.
@@ -115,6 +115,6 @@ uninstall:
       type: msgbox
       options: [ clear ]
       text: |
-        FULANOSOFTWARE v3.4 has successfully been uninstalled.
+        $program $version has successfully been uninstalled.
 
         Vaya usted con Dios.
