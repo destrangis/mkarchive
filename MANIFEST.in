@@ -1,0 +1,3 @@
+include README.rst
+include LICENSE
+include mkarchive/selfextract0.c
