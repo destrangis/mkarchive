@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 try:
     from importlib.resources import read_text
 except ImportError:
@@ -150,7 +151,7 @@ def parse_cmdline(argv):
     )
     p.add_argument("--install-spec", "-i", metavar="install-spec",
         help="Installer specification in YAML")
-    p.add_argument("--workdir", "-w", metavar="tmpdir",
+    p.add_argument("--tmpdir", "-t", metavar="tmpdir",
         default=os.getenv("TMP", "/tmp"),
         help="Work directory. Default $TMP or /tmp")
     p.add_argument("--uname", "-u", metavar="script-name",
@@ -189,12 +190,13 @@ def main(argv=None):
         if 'setup' not in options.file:
             options.file.append('setup')
 
-    workdir = pathlib.Path(options.workdir)
-    tarname = workdir / DEFAULT_TAR_NAME
-    create_tar(options.file, tarname)
-    tempextractor = create_self_extractor(options.libtar, options.zlib, workdir)
-    cat_exe_archive(tempextractor, tarname, pathlib.Path(options.output))
-    cleanup(tempextractor, tarname)
+    with tempfile.TemporaryDirectory(dir=options.tmpdir) as tmpdir:
+        workdir = pathlib.Path(tmpdir)
+
+        tarname = workdir / DEFAULT_TAR_NAME
+        create_tar(options.file, tarname)
+        tempextractor = create_self_extractor(options.libtar, options.zlib, workdir)
+        cat_exe_archive(tempextractor, tarname, pathlib.Path(options.output))
 
 
 if __name__ == "__main__":
