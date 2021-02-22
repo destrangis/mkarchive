@@ -8,21 +8,24 @@ import shutil
 import subprocess
 import sys
 import tarfile
+try:
+    from importlib.resources import read_text
+except ImportError:
+    from importlib_resources import read_text
 
-from smartsetup import create_installer
+from installer import create_installer
 
-HERE = pathlib.Path(__file__).parent
 
 DEFAULT_LIBTAR_A            = "/usr/lib/x86_64-linux-gnu/libtar.a"
 DEFAULT_LIBZ_A              = "/usr/lib/x86_64-linux-gnu/libz.a"
 DEFAULT_TAR_NAME            = "_tmp.tar.gz"
 DEFAULT_SELF_EXTRACTOR_NAME = "selfextract"
-SELF_EXTRACTOR_SRC          = HERE / "selfextract0.c"
-SELF_EXTRACTOR              = HERE / "selfextract1"
+SELF_EXTRACTOR_SRC          = "selfextract0.c"
+SELF_EXTRACTOR              = "selfextract1"
 CHUNKSIZE                   = 1024 * 1024
 
 
-def create_tar(filelst, tarname=DEFAULT_TAR_NAME):
+def create_tar(filelst, tarname=DEFAULT_TAR_NAME, workdir="."):
     print(f"Creating tar '{tarname}'")
     with tarfile.open(tarname, "w:gz", format=tarfile.GNU_FORMAT) as tar:
         for f in filelst:
@@ -67,10 +70,13 @@ def make_executable(src, exename,
         raise NotImplementedError(f"Platform '{sys.platform}' not (yet) supported.")
 
 
-def create_self_extractor(libtar, libz):
+def create_self_extractor(libtar, libz, workdir):
     print(f"Creating {SELF_EXTRACTOR}")
-    selfext = SELF_EXTRACTOR
-    src = SELF_EXTRACTOR_SRC
+    selfext = workdir / SELF_EXTRACTOR
+    src = workdir / SELF_EXTRACTOR_SRC
+    module = __name__.split(".")[0]
+    with src.open("w") as sd:
+        sd.write(read_text(module, SELF_EXTRACTOR_SRC))
 
     #shutil.copy(SELF_EXTRACTOR_PATTERN, src)
 
@@ -87,6 +93,7 @@ def create_self_extractor(libtar, libz):
     if size != selfext.stat().st_size:  # sanity check
         raise RuntimeError("Size mismatch on output executable!")
 
+    src.unlink() # not needed any more
     print(f"Size of {selfext} matches {size}")
     return selfext
 
@@ -143,8 +150,9 @@ def parse_cmdline(argv):
     )
     p.add_argument("--install-spec", "-i", metavar="install-spec",
         help="Installer specification in YAML")
-    # p.add_argument("--name", "-n", metavar="script-name", default="setup",
-            # help="Generate script with this name. Default 'setup'")
+    p.add_argument("--workdir", "-w", metavar="tmpdir",
+        default=os.getenv("TMP", "/tmp"),
+        help="Work directory. Default $TMP or /tmp")
     p.add_argument("--uname", "-u", metavar="script-name",
             default="uninstall",
             help="Name of the uninstaller script. Default 'uninstall'")
@@ -181,9 +189,10 @@ def main(argv=None):
         if 'setup' not in options.file:
             options.file.append('setup')
 
-    tarname = pathlib.Path(DEFAULT_TAR_NAME)
+    workdir = pathlib.Path(options.workdir)
+    tarname = workdir / DEFAULT_TAR_NAME
     create_tar(options.file, tarname)
-    tempextractor = create_self_extractor(options.libtar, options.zlib)
+    tempextractor = create_self_extractor(options.libtar, options.zlib, workdir)
     cat_exe_archive(tempextractor, tarname, pathlib.Path(options.output))
     cleanup(tempextractor, tarname)
 
