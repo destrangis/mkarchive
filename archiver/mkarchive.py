@@ -11,17 +11,20 @@ import tarfile
 import tempfile
 
 try:
-    from importlib.resources import read_text
+    from importlib.resources import read_text, files
 except ImportError:
-    from importlib_resources import read_text
+    from importlib_resources import read_text, files
 
 import installer
 
+# we need the module name to locate its resources
+MODULE = __name__.split(".")[0]
 
 DEFAULT_LIBTAR_A = "/usr/lib/x86_64-linux-gnu/libtar.a"
 DEFAULT_LIBZ_A = "/usr/lib/x86_64-linux-gnu/libz.a"
 DEFAULT_TAR_NAME = "_tmp.tar.gz"
 DEFAULT_SELF_EXTRACTOR_NAME = "selfextract"
+DEFAULT_SETUP_NAME = "setup.sh"
 SELF_EXTRACTOR_SRC = "selfextract0.c"
 SELF_EXTRACTOR = "selfextract1"
 CHUNKSIZE = 1024 * 1024
@@ -32,6 +35,11 @@ def create_tar(filelst, tarname=DEFAULT_TAR_NAME, workdir="."):
     with tarfile.open(tarname, "w:gz", format=tarfile.GNU_FORMAT) as tar:
         for f in filelst:
             tar.add(f)
+
+        if "setup" not in filelst:
+            print("Adding default 'setup' program")
+            setup = files(MODULE) / DEFAULT_SETUP_NAME
+            tar.add(str(setup), "setup")
 
 
 def make_executable(src, exename, libtar=None, zlib=None, cppdefs=None, debug=False):
@@ -80,9 +88,9 @@ def create_self_extractor(libtar, libz, workdir):
     print(f"Creating {SELF_EXTRACTOR}")
     selfext = workdir / SELF_EXTRACTOR
     src = workdir / SELF_EXTRACTOR_SRC
-    module = __name__.split(".")[0]
+
     with src.open("w") as sd:
-        sd.write(read_text(module, SELF_EXTRACTOR_SRC))
+        sd.write(read_text(MODULE, SELF_EXTRACTOR_SRC))
 
     # shutil.copy(SELF_EXTRACTOR_PATTERN, src)
 
