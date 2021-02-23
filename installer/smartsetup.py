@@ -7,7 +7,7 @@ from io import StringIO
 
 import yaml
 
-DIALOG="dialog"
+DIALOG = "dialog"
 
 CHECK_CANCEL = """
 function check_cancel {{
@@ -22,21 +22,26 @@ function check_cancel {{
 
 """
 
+
 def escape_text(txt):
     escape_set = "\\$"  # make sure the \ gets escaped first!
     for c in escape_set:
         txt = txt.replace(c, "\\" + c)
     return txt
 
+
 def loaddef(config_file):
 
     with open(config_file) as cfg:
         cfgcontent = yaml.load(cfg, Loader=yaml.Loader)
     if not isinstance(cfgcontent, dict) or "install" not in cfgcontent:
-        raise RuntimeError(f"{config_file} must must be a mapping "
-                            "containing at least an 'install' key")
+        raise RuntimeError(
+            f"{config_file} must must be a mapping "
+            "containing at least an 'install' key"
+        )
 
     return cfgcontent
+
 
 def write_screen(fd, scr, dialog):
     scr_type = scr.get("type")
@@ -48,7 +53,7 @@ def write_screen(fd, scr, dialog):
     text = scr.get("text", "Screen Intentionally Blank")
     options = scr.get("options", [])
     store_var = scr.get("store")
-    store_val = "$"+store_var if store_var else None
+    store_val = "$" + store_var if store_var else None
     default = scr.get("default")
     after = scr.get("after")
 
@@ -59,17 +64,18 @@ def write_screen(fd, scr, dialog):
     else:
         fd.write(
             (f"if [ {condition} ]\nthen\n" if condition else "")
-          + (f"{store_var}={default or ''}\n" if store_var else "")
-          + f"{dialog} {' '.join('--' + opt for opt in options)} \\\n"
-          + ("" if not title else f"  --title {title} \\\n")
-          + f"  --{scr_type} \"{text}\" \\\n"
-          + f"  0 0 { store_val or '' } 2> $tmpfile\n"
-          + "exitval=$?\n"
-          + "check_cancel $exitval\n"
-          + (f"{store_var}=$(cat $tmpfile)\n" if store_var else "")
-          + (f"{after}\n" if after else "")
-          + ("fi\n" if condition else "")
-          + "\n")
+            + (f"{store_var}={default or ''}\n" if store_var else "")
+            + f"{dialog} {' '.join('--' + opt for opt in options)} \\\n"
+            + ("" if not title else f"  --title {title} \\\n")
+            + f'  --{scr_type} "{text}" \\\n'
+            + f"  0 0 { store_val or '' } 2> $tmpfile\n"
+            + "exitval=$?\n"
+            + "check_cancel $exitval\n"
+            + (f"{store_var}=$(cat $tmpfile)\n" if store_var else "")
+            + (f"{after}\n" if after else "")
+            + ("fi\n" if condition else "")
+            + "\n"
+        )
 
 
 def start_script(fd, dialog, vars):
@@ -94,8 +100,9 @@ def create_uninstaller(scrlst, dialog, vars):
         return outfd.getvalue()
 
 
-def create_installer(config_file, name, uninstaller="uninstall",
-                    dialog=DIALOG, vars=None):
+def create_installer(
+    config_file, name, uninstaller="uninstall", dialog=DIALOG, vars=None
+):
     if vars is None:
         vars = {}
 
@@ -129,17 +136,34 @@ def create_installer(config_file, name, uninstaller="uninstall",
 
 def parse_cmdline(argv):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--name", "-n", metavar="script-name", default="setup",
-            help="Generate script with this name. Default 'setup'")
-    p.add_argument("--uname", "-u", metavar="script-name",
-            default="uninstall",
-            help="Name of the uninstaller script. Default 'uninstall'")
-    p.add_argument("--dialog-tool", "-d", metavar="dialog-tool",
-            default=DIALOG,
-            help="Name of the dialog tool. Default 'dialog'")
-    p.add_argument("--var", "-v", metavar="varname[=value]",
-            action="append",
-            help="Define variable and its value for use in the script")
+    p.add_argument(
+        "--name",
+        "-n",
+        metavar="script-name",
+        default="setup",
+        help="Generate script with this name. Default 'setup'",
+    )
+    p.add_argument(
+        "--uname",
+        "-u",
+        metavar="script-name",
+        default="uninstall",
+        help="Name of the uninstaller script. Default 'uninstall'",
+    )
+    p.add_argument(
+        "--dialog-tool",
+        "-d",
+        metavar="dialog-tool",
+        default=DIALOG,
+        help="Name of the dialog tool. Default 'dialog'",
+    )
+    p.add_argument(
+        "--var",
+        "-v",
+        metavar="varname[=value]",
+        action="append",
+        help="Define variable and its value for use in the script",
+    )
     p.add_argument("spec", help="Input specification in YAML")
 
     return p.parse_args(argv)
@@ -159,11 +183,14 @@ def main(argv=None):
         val = kv[1] if len(kv) > 1 else None
         varmap[key] = val
 
-    create_installer(options.spec,
-                    options.name,
-                    options.uname,
-                    dialog=options.dialog_tool,
-                    vars=varmap)
+    create_installer(
+        options.spec,
+        options.name,
+        options.uname,
+        dialog=options.dialog_tool,
+        vars=varmap,
+    )
+
 
 if __name__ == "__main__":
     main()

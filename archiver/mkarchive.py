@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+
 try:
     from importlib.resources import read_text
 except ImportError:
@@ -17,13 +18,13 @@ except ImportError:
 import installer
 
 
-DEFAULT_LIBTAR_A            = "/usr/lib/x86_64-linux-gnu/libtar.a"
-DEFAULT_LIBZ_A              = "/usr/lib/x86_64-linux-gnu/libz.a"
-DEFAULT_TAR_NAME            = "_tmp.tar.gz"
+DEFAULT_LIBTAR_A = "/usr/lib/x86_64-linux-gnu/libtar.a"
+DEFAULT_LIBZ_A = "/usr/lib/x86_64-linux-gnu/libz.a"
+DEFAULT_TAR_NAME = "_tmp.tar.gz"
 DEFAULT_SELF_EXTRACTOR_NAME = "selfextract"
-SELF_EXTRACTOR_SRC          = "selfextract0.c"
-SELF_EXTRACTOR              = "selfextract1"
-CHUNKSIZE                   = 1024 * 1024
+SELF_EXTRACTOR_SRC = "selfextract0.c"
+SELF_EXTRACTOR = "selfextract1"
+CHUNKSIZE = 1024 * 1024
 
 
 def create_tar(filelst, tarname=DEFAULT_TAR_NAME, workdir="."):
@@ -33,11 +34,7 @@ def create_tar(filelst, tarname=DEFAULT_TAR_NAME, workdir="."):
             tar.add(f)
 
 
-def make_executable(src, exename,
-                    libtar=None,
-                    zlib=None,
-                    cppdefs=None,
-                    debug=False):
+def make_executable(src, exename, libtar=None, zlib=None, cppdefs=None, debug=False):
     if debug:
         opt = "-g"
     else:
@@ -61,8 +58,16 @@ def make_executable(src, exename,
                 cpplst.append(f"-D{k}={v}")
 
     if sys.platform.lower().startswith("linux"):
-        p = subprocess.run(["gcc", opt, "-o", str(exename),]
-                            + cpplst + [str(src), libtar, zlib])
+        p = subprocess.run(
+            [
+                "gcc",
+                opt,
+                "-o",
+                str(exename),
+            ]
+            + cpplst
+            + [str(src), libtar, zlib]
+        )
         if p.returncode:
             raise RuntimeError(
                 f"Couldn't build self extractor '{exename}' from '{src}'"
@@ -79,14 +84,14 @@ def create_self_extractor(libtar, libz, workdir):
     with src.open("w") as sd:
         sd.write(read_text(module, SELF_EXTRACTOR_SRC))
 
-    #shutil.copy(SELF_EXTRACTOR_PATTERN, src)
+    # shutil.copy(SELF_EXTRACTOR_PATTERN, src)
 
     make_executable(src, selfext, libtar, libz)
 
     size = selfext.stat().st_size
     print(f"{selfext} created with size {size}")
 
-    #edit_file_size(src, size)
+    # edit_file_size(src, size)
 
     print(f"Recompiling {src}")
     make_executable(src, selfext, libtar, cppdefs={"THIS_FILE_SIZE": str(size)})
@@ -94,7 +99,7 @@ def create_self_extractor(libtar, libz, workdir):
     if size != selfext.stat().st_size:  # sanity check
         raise RuntimeError("Size mismatch on output executable!")
 
-    src.unlink() # not needed any more
+    src.unlink()  # not needed any more
     print(f"Size of {selfext} matches {size}")
     return selfext
 
@@ -132,14 +137,16 @@ def create_installer(options):
         val = kv[1] if len(kv) > 1 else None
         varmap[key] = val
 
-    installer.create_installer(options.install_spec,
-                'setup',
-                options.uname,
-                dialog=options.dialog_tool,
-                vars=varmap)
+    installer.create_installer(
+        options.install_spec,
+        "setup",
+        options.uname,
+        dialog=options.dialog_tool,
+        vars=varmap,
+    )
 
-    if 'setup' not in options.file:
-        options.file.append('setup')
+    if "setup" not in options.file:
+        options.file.append("setup")
 
 
 def parse_cmdline(argv):
@@ -168,20 +175,40 @@ def parse_cmdline(argv):
         default=DEFAULT_LIBZ_A,
         help=f"Location of zlib.a for linking. Default '{DEFAULT_LIBZ_A}'",
     )
-    p.add_argument("--install-spec", "-i", metavar="install-spec",
-        help="Installer specification in YAML")
-    p.add_argument("--tmpdir", "-t", metavar="tmpdir",
+    p.add_argument(
+        "--install-spec",
+        "-i",
+        metavar="install-spec",
+        help="Installer specification in YAML",
+    )
+    p.add_argument(
+        "--tmpdir",
+        "-t",
+        metavar="tmpdir",
         default=os.getenv("TMP", "/tmp"),
-        help="Work directory. Default $TMP or /tmp")
-    p.add_argument("--uname", "-u", metavar="script-name",
-            default="uninstall",
-            help="Name of the uninstaller script. Default 'uninstall'")
-    p.add_argument("--dialog-tool", "-d", metavar="dialog-tool",
-            default='dialog',
-            help="Name of the dialog tool. Default 'dialog'")
-    p.add_argument("--var", "-v", metavar="varname[=value]",
-            action="append",
-            help="Define variable and its value for use in the installer script")
+        help="Work directory. Default $TMP or /tmp",
+    )
+    p.add_argument(
+        "--uname",
+        "-u",
+        metavar="script-name",
+        default="uninstall",
+        help="Name of the uninstaller script. Default 'uninstall'",
+    )
+    p.add_argument(
+        "--dialog-tool",
+        "-d",
+        metavar="dialog-tool",
+        default="dialog",
+        help="Name of the dialog tool. Default 'dialog'",
+    )
+    p.add_argument(
+        "--var",
+        "-v",
+        metavar="varname[=value]",
+        action="append",
+        help="Define variable and its value for use in the installer script",
+    )
     p.add_argument("file", nargs="+", help="Files and directories to archive")
     return p.parse_args(argv)
 
