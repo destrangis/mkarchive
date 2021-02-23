@@ -14,7 +14,7 @@ try:
 except ImportError:
     from importlib_resources import read_text
 
-from installer import create_installer
+import installer
 
 
 DEFAULT_LIBTAR_A            = "/usr/lib/x86_64-linux-gnu/libtar.a"
@@ -123,13 +123,32 @@ def cleanup(*files):
         os.remove(f)
 
 
+def create_installer(options):
+    varlst = options.var or []
+    varmap = {}
+    for v in varlst:
+        kv = v.split("=", 1)
+        key = kv[0]
+        val = kv[1] if len(kv) > 1 else None
+        varmap[key] = val
+
+    installer.create_installer(options.install_spec,
+                'setup',
+                options.uname,
+                dialog=options.dialog_tool,
+                vars=varmap)
+
+    if 'setup' not in options.file:
+        options.file.append('setup')
+
+
 def parse_cmdline(argv):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--output",
         "-o",
         metavar="name",
-        default="selfextract",
+        default=DEFAULT_SELF_EXTRACTOR_NAME,
         help="Name of the output self-extractor. Default "
         f"'{DEFAULT_SELF_EXTRACTOR_NAME}'",
     )
@@ -173,22 +192,7 @@ def main(argv=None):
 
     options = parse_cmdline(argv)
     if options.install_spec:
-        varlst = options.var or []
-        varmap = {}
-        for v in varlst:
-            kv = v.split("=", 1)
-            key = kv[0]
-            val = kv[1] if len(kv) > 1 else None
-            varmap[key] = val
-
-        create_installer(options.install_spec,
-                    'setup',
-                    options.uname,
-                    dialog=options.dialog_tool,
-                    vars=varmap)
-
-        if 'setup' not in options.file:
-            options.file.append('setup')
+        create_installer(options)
 
     with tempfile.TemporaryDirectory(dir=options.tmpdir) as tmpdir:
         workdir = pathlib.Path(tmpdir)
