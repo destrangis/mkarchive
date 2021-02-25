@@ -14,7 +14,6 @@ function check_cancel {{
         if [ $1 -eq 255 -o $1 -eq 1 ]; then
             {} --title "Confirm" --yesno "Are you sure you want to quit?" 0 0
             if [ $? -eq 0 ]; then
-                rm $tmpfile
                 exit 1
             fi
         fi
@@ -65,6 +64,7 @@ def write_screen(fd, scr, dialog):
         fd.write(
             (f"if [ {condition} ]\nthen\n" if condition else "")
             + (f"{store_var}={default or ''}\n" if store_var else "")
+            + "tmpfile=$(mktemp -q) && {\n"
             + f"{dialog} {' '.join('--' + opt for opt in options)} \\\n"
             + ("" if not title else f"  --title {title} \\\n")
             + f'  --{scr_type} "{text}" \\\n'
@@ -72,6 +72,8 @@ def write_screen(fd, scr, dialog):
             + "exitval=$?\n"
             + "check_cancel $exitval\n"
             + (f"{store_var}=$(cat $tmpfile)\n" if store_var else "")
+            + "rm $tmpfile\n"
+            + "}\n"
             + (f"{after}\n" if after else "")
             + ("fi\n" if condition else "")
             + "\n"
@@ -83,7 +85,6 @@ def start_script(fd, dialog, vars):
     fd.write("set -euo pipefail\n")
     fd.write(CHECK_CANCEL.format(dialog))
     fd.write("pid=$BASHPID\n")
-    fd.write("tmpfile=/tmp/response_$pid\n\n")
     for key, val in vars.items():
         fd.write(key + "=" + (val or "") + "\n")
     fd.write("\n")
@@ -95,7 +96,6 @@ def create_uninstaller(scrlst, dialog, vars):
         outfd.write("rootdir=$(dirname $0)\n")
         for scr in scrlst:
             write_screen(outfd, scr, dialog)
-        outfd.write("rm $tmpfile\n")
         outfd.write("rm $0\n\n")
         return outfd.getvalue()
 
@@ -124,7 +124,6 @@ def create_installer(
             fd.write(f"uninstaller_name={uninstaller}\n")
         for scr in scrlst:
             write_screen(fd, scr, dialog)
-        fd.write("rm $tmpfile\n")
         if uninstalling:
             fd.write("cat <<EOF >$destdir/$uninstaller_name\n")
             fd.write(escape_text(uninst_code))
