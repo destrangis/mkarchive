@@ -215,8 +215,6 @@ ssize_t read_compressed(int fd, void *buffer, size_t len)
     if (eof_found)
         return 0;
 
-    //say("Reading block of %zu bytes.\n", len);
-
     bytesread = gzread(inputstream, buffer, len);
 
     if (bytesread == -1) {
@@ -262,7 +260,6 @@ static tartype_t gzfunpack = {
 
 static char * make_temp_dir()
 {
-    //pid_t pid = getpid();
     char *tmpdir = getenv("TMP");
     char *td;
     char *tdirname;
@@ -274,9 +271,7 @@ static char * make_temp_dir()
         tmpdir = "/tmp";
     }
 
-    //td = fstring("%s/selfex__%d", tmpdir, pid);
     td = fstring("%s/selfex__XXXXXX", tmpdir);
-    //say("Creating temporary dir at '%s'\n", tmpdir);
     tdirname = mkdtemp(td);
     if (tdirname == NULL) {
         fprintf(stderr, "Couldn't create temporary directory.\n");
@@ -424,19 +419,6 @@ int main(int argc, char *argv[])
         rc = 100;
         goto exit;
     }
-
-    //if ((fd = open(argv[0], O_RDONLY)) < 0) {
-        //fprintf(stderr, "Couldn't open '%s': [%d] %s\n", argv[0], errno, strerror(errno));
-        //rc = 101;
-        //goto exit;
-    //}
-
-    //say("Setting position at %d\n", THIS_FILE_SIZE);
-    //if (lseek(fd, THIS_FILE_SIZE, SEEK_SET) < 0) {
-        //fprintf(stderr, "Error seeking [%d] %s\n", errno, strerror(errno));
-        //rc = 102;
-        //goto exit;
-    //}
 
     if (options.list) {
         if (list(argv[0]) != 0) {
