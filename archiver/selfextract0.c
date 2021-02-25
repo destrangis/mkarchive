@@ -33,7 +33,7 @@ static option_rec option_descriptions[] = {
     {"tmpdir",  required_argument, 't', "<dir>", "Use this temporary directory instead of /tmp or $TMP"},
     {"verbose", no_argument,       'v', NULL, "Print what's being done."},
     {"list",    no_argument,       'l', NULL, "Do not extract. Just show the list of files contained in archive."},
-    {0, 0, 0,}
+    {0, 0, 0, 0}
 };
 
 static struct {
@@ -262,9 +262,10 @@ static tartype_t gzfunpack = {
 
 static char * make_temp_dir()
 {
-    pid_t pid = getpid();
+    //pid_t pid = getpid();
     char *tmpdir = getenv("TMP");
     char *td;
+    char *tdirname;
     int err;
 
     if (options.tmpdir) {
@@ -273,16 +274,18 @@ static char * make_temp_dir()
         tmpdir = "/tmp";
     }
 
-    td = fstring("%s/selfex__%d", tmpdir, pid);
-    say("Creating temporary dir at '%s'\n", td);
-    err = mkdir(td, 0700);
-    if (err < 0) {
+    //td = fstring("%s/selfex__%d", tmpdir, pid);
+    td = fstring("%s/selfex__XXXXXX", tmpdir);
+    //say("Creating temporary dir at '%s'\n", tmpdir);
+    tdirname = mkdtemp(td);
+    if (tdirname == NULL) {
         fprintf(stderr, "Couldn't create temporary directory.\n");
         fprintf(stderr, "\t[%d] %s\n", errno, strerror(errno));
+        free(td);
         return NULL;
     }
 
-    return td;
+    return tdirname;
 }
 
 
