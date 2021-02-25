@@ -15,6 +15,7 @@ try:
 except ImportError:
     from importlib_resources import read_text, files
 
+from . import VERSION
 import installer
 
 # we need the module name to locate its resources
@@ -160,6 +161,12 @@ def create_installer(options):
 def parse_cmdline(argv):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
+        "--version",
+        action="store_true",
+        default=False,
+        help="Print version and exit"
+    )
+    p.add_argument(
         "--output",
         "-o",
         metavar="name",
@@ -167,8 +174,6 @@ def parse_cmdline(argv):
         help="Name of the output self-extractor. Default "
         f"'{DEFAULT_SELF_EXTRACTOR_NAME}'",
     )
-    # p.add_argument("--run", "-r", metavar="program",
-    # help="Executable program or script to run after extraction")
     p.add_argument(
         "--libtar",
         "-l",
@@ -199,7 +204,7 @@ def parse_cmdline(argv):
     p.add_argument(
         "--uname",
         "-u",
-        metavar="script-name",
+        metavar="uninstaller-name",
         default="uninstall",
         help="Name of the uninstaller script. Default 'uninstall'",
     )
@@ -217,7 +222,7 @@ def parse_cmdline(argv):
         action="append",
         help="Define variable and its value for use in the installer script",
     )
-    p.add_argument("file", nargs="+", help="Files and directories to archive")
+    p.add_argument("file", nargs="*", help="Files and directories to archive")
     return p.parse_args(argv)
 
 
@@ -226,6 +231,15 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     options = parse_cmdline(argv)
+
+    if options.version:
+        print(VERSION)
+        return 0
+
+    if not options.file:
+        print("No files specified for the archive.")
+        return 1
+
     if options.install_spec:
         create_installer(options)
 
@@ -237,6 +251,7 @@ def main(argv=None):
         tempextractor = create_self_extractor(options.libtar, options.zlib, workdir)
         cat_exe_archive(tempextractor, tarname, pathlib.Path(options.output))
 
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
