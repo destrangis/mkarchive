@@ -1,22 +1,32 @@
+# sample spec for an installer program, provided for demonstration
+# purposes.
+
+# create a self extracting archive with:
+# mkarchive -o installer.bin         \
+#           -i sample-installer.yml  \
+#           -vprogram=MySoftware     \
+#           -vversion=1.1.0          \
+#           files
+#
+# or just the setup script with
+# smartsetup -n setup.sh             \
+#           -vprogram=MySoftware     \
+#           -vversion=1.1.0          \
+#           sample-installer.yml
+
+
 install:
     - title: Welcome to the Installer for $program $version
       type: msgbox
       text: |
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-        eiusmod tempor incididunt ut labore et dolore magna aliqua. Mattis
-        enim ut tellus elementum sagittis vitae et leo. Gravida dictum fusce
-        ut placerat orci nulla pellentesque dignissim enim. Sodales ut eu
-        sem integer vitae justo eget.
+        This is the installation program for $program $version.
 
-        Et netus et malesuada fames ac turpis egestas maecenas pharetra.
-        Nec ullamcorper sit amet risus nullam eget felis eget. Integer enim
-        neque volutpat ac tincidunt vitae semper quis. Tincidunt nunc
-        pulvinar sapien et ligula ullamcorper.
+        I will ask you where you want $program installed, and then I will
+        ask you an additional question which you may answer or not, I
+        don't care as my purpose is to demonstrate the smartsetup utility,
+        not to do anything useful.
 
-        Et tortor at risus viverra. Eget mi proin sed libero enim sed.
-        Egestas diam in arcu cursus.
-      #options:
-        #- ok-button=Continue
+        I will also write a file called install.log on your home directory.
 
     - title: Destination Directory
       type: inputbox
@@ -24,27 +34,29 @@ install:
         I need to know the location of the destination directory.
 
         Please enter the full path where you want this software installed.
-        (e.g. /opt/fulano/3.4)
-      default: /home/javier/test_tree2
+        Better enter a directory that exists because I'm not creating it
+        if not. A real setup program should, but I am not one.
+        (e.g. /opt/$program/$version)
+      default: /home/$USER/$program
       store: destdir
 
-    - title: Enter License File
+    - title: Enter the Special Code
       type: inputbox
       text: |
-        If you have been issued a license file, please enter its full path.
+        If you the Special Code you can enter it now:
 
-        (e.g. /home/user/license.dat)
-      store: licensefile
+        (e.g. XVTR-2342-SEKRETT)
+      store: specialcode
 
     - title: Warning
-      condition: -z "$licensefile"
+      condition: -z "$specialcode"
       type: msgbox
       text: |
-        You haven't entered a license file.
+        You haven't entered the Special Code.
 
-        The installation will proceed, but you'll need to get the license
-        later on to use the software and set the variable LICENSE_FILE
-        to its location.
+        The installation will proceed, but it will self-destruct in 10
+        days unless you enter a valid Special Code in the configuration
+        file.
 
         Press OK to continue.
 
@@ -54,7 +66,7 @@ install:
         Copying files. Please wait...
 
     - type: code
-      text: sleep 5
+      text: sleep 2
 
     - title: Installing
       type: infobox
@@ -65,12 +77,12 @@ install:
 
     - type: code
       text: |
+        # you can enter any shell code in the 'code' sections
         logfile=~/install.log
         echo "== Copying $rootdir/XXX to $destdir ==" >> $logfile
-        if [ ! -z "$licensefile" ]; then
-            echo "== Copying $licensefile to $destdir ==" >> $logfile
+        if [ ! -z "$specialcode" ]; then
+            echo "== The special code is $specialcode ==" >> $logfile
         fi
-        ls -lR $rootdir >> $logfile
         success=1
         sleep 3
 
@@ -79,7 +91,7 @@ install:
       condition: $success -eq 1
       text: |
         The installation of $program $version has been successful.
-        You can start to use the software after a session restart (log-out, log-in)
+        You can start to use the software straight away.
       options:
         - clear
 
@@ -118,4 +130,4 @@ uninstall:
       text: |
         $program $version has successfully been uninstalled.
 
-        Vaya usted con Dios.
+        Sorry to see you go.
