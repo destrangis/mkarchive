@@ -10,6 +10,10 @@ archive files.
 It comes with ``smartsetup``, a utility that will generate a ``setup``
 program for you, based on the ``dialog`` utility.
 
+You may want to consider makeself_ as an alternative to this software.
+
+.. _makeself: https://makeself.io/
+
 Installing
 ----------
 
