@@ -103,7 +103,8 @@ def create_self_extractor(libtar, libz, workdir):
     # edit_file_size(src, size)
 
     print(f"Recompiling {src}")
-    make_executable(src, selfext, libtar, cppdefs={"THIS_FILE_SIZE": str(size)})
+    make_executable(src, selfext, libtar, libz,
+                    cppdefs={"THIS_FILE_SIZE": str(size)})
 
     if size != selfext.stat().st_size:  # sanity check
         raise RuntimeError("Size mismatch on output executable!")
