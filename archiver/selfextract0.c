@@ -111,7 +111,7 @@ static int get_cmdline_args(int argc, char *argv[])
 
     while (!error) {
         c = getopt_long(argc, argv, "vlt:h", long_options, &option_index);
-        if (c == -1)
+        if (c == (char)-1)
             break;
 
         switch (c) {
