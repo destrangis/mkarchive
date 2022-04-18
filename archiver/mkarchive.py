@@ -21,8 +21,9 @@ import installer
 # we need the module name to locate its resources
 MODULE = __name__.split(".")[0]
 
-DEFAULT_LIBTAR_A = "/usr/lib/x86_64-linux-gnu/libtar.a"
-DEFAULT_LIBZ_A = "/usr/lib/x86_64-linux-gnu/libz.a"
+archdirname = sys.implementation._multiarch
+DEFAULT_LIBTAR_A = f"/usr/lib/{archdirname}/libtar.a"
+DEFAULT_LIBZ_A = f"/usr/lib/{archdirname}/libz.a"
 DEFAULT_TAR_NAME = "_tmp.tar.gz"
 DEFAULT_SELF_EXTRACTOR_NAME = "selfextract"
 DEFAULT_SETUP_NAME = "setup.sh"
@@ -232,10 +233,6 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     options = parse_cmdline(argv)
-
-    if options.version:
-        print(VERSION)
-        return 0
 
     if not options.file:
         print("No files specified for the archive.")
