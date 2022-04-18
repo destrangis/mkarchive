@@ -163,8 +163,8 @@ def parse_cmdline(argv):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--version",
-        action="store_true",
-        default=False,
+        action="version",
+        version="%(prog)s " + VERSION,
         help="Print version and exit"
     )
     p.add_argument(
