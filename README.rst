@@ -30,6 +30,10 @@ to be in the path, and also ``libtar`` and ``zlib``.
 On the target machine, it requires ``bash`` and ``libc6`` must be the
 same version as  in the development machine. Also, depending on how you
 created the archive, it might need ``libtar`` and ``zlib`` to be installed.
+On a Debian-like distro you may need to do::
+
+    $ apt install libtar-dev zlib1g-dev
+
 ``mkarchive`` will try to link both libraries statically to relieve the
 target machine of this requirement but, obviously, the archive will be
 a little heavier as a result.
