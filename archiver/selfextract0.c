@@ -33,6 +33,7 @@ static option_rec option_descriptions[] = {
     {"tmpdir",  required_argument, 't', "<dir>", "Use this temporary directory instead of /tmp or $TMP"},
     {"verbose", no_argument,       'v', NULL, "Print what's being done."},
     {"list",    no_argument,       'l', NULL, "Do not extract. Just show the list of files contained in archive."},
+    {"pass",    required_argument, 'p', "<argstring>", "Pass arguments to the setup program, in one string."},
     {0, 0, 0, 0}
 };
 
@@ -41,6 +42,7 @@ static struct {
     char *tmpdir;
     int verbose;
     int list;
+    char *setupargs;
 } options;
 
 // return options as getopt_long() requires
@@ -108,9 +110,10 @@ static int get_cmdline_args(int argc, char *argv[])
     options.list = 0;
     options.tmpdir = NULL;
     options.verbose = 0;
+    options.setupargs = NULL;
 
     while (!error) {
-        c = getopt_long(argc, argv, "vlt:h", long_options, &option_index);
+        c = getopt_long(argc, argv, "vlt:p:h", long_options, &option_index);
         if (c == (char)-1)
             break;
 
@@ -126,6 +129,9 @@ static int get_cmdline_args(int argc, char *argv[])
             break;
         case 't':
             options.tmpdir = optarg;
+            break;
+        case 'p':
+            options.setupargs = optarg;
             break;
         case '?':
             error = 1;
@@ -335,7 +341,9 @@ static int list(char *filename)
 static int run_setup(char *tmpdir)
 {
     int rc;
-    char *cmd = fstring("%s/setup %s", tmpdir, tmpdir);
+    char *extra_args = options.setupargs? options.setupargs : "";
+
+    char *cmd = fstring("%s/setup %s %s", tmpdir, extra_args, tmpdir);
 
     say("Running '%s'\n", cmd);
     rc = system(cmd);
